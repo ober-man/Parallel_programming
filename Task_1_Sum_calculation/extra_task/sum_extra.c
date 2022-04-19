@@ -4,6 +4,8 @@
 
 int main(int argc, char* argv[])
 {
+	MPI_Init(&argc, &argv);
+
 	if(argc < 2)
 	{
 		printf("Error: to less arguments\n");
@@ -13,11 +15,32 @@ int main(int argc, char* argv[])
 	int N = atoi(argv[1]); 	// maximal number in sum
 	int size = 0; 			// number of processes
 	int rank = 0; 			// rank of a process 
-
-	MPI_Init(&argc, &argv);
 	double time_begin = MPI_Wtime();
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+	// if there are only 1 process
+	if(size == 1)
+	{
+		int sum = 0;
+		MPI_Status status;
+		for(int i = 1; i <= N; ++i)
+			sum += i;
+		printf("sum = %d\n", sum);
+
+		// send a number to itself
+		MPI_Send(&sum, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+		int sum_rec = 0;
+		MPI_Recv(&sum_rec, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+		double time_end = MPI_Wtime();
+
+		// and print it
+		printf("Sum 1 + ... + N = %d\n", sum_rec);
+		printf("Program time = %lg mks\n", (time_end - time_begin)*1e6);
+		MPI_Finalize();
+		return 0;
+	}
+
 
 	if(rank == 0) // process-manager
 	{
